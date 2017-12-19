@@ -21,6 +21,7 @@ class Documents(Base):
     __tablename__ = 'Documents'
     id = Column(Integer, primary_key=True)
     handle = Column(String(256))
+    #: Should usually be a reference to a document in DocuShare.
     document_type = Column(String(256))
     status = Column(String(256))
     summary = Column(Text)
@@ -70,7 +71,7 @@ class Requirements(Base):
     __tablename__ = 'Requirements'
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("Documents.id"))
-    handle = Column(String(256))
+    req_id = Column(String(256))
     requirement_type = Column(String(256))
     status = Column(String(256))
     summary = Column(Text)
