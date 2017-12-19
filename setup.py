@@ -2,6 +2,7 @@ from setuptools import setup
 
 requires = [
     'flask',
+    'sqlalchemy',
     'flask_appbuilder',
     'marshmallow',
     'alembic',

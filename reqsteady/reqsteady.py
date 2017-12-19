@@ -1,15 +1,19 @@
 from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from reqsteady.model import *
+from flask_appbuilder import SQLA
+from flask_appbuilder import AppBuilder
 from reqsteady.api import *
+from sqlalchemy.engine import Engine
+from sqlalchemy import event
 
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 
-db = SQLAlchemy(app, model_class=Base)
+app.config.from_object('config')
+db = SQLA(app, model_class=Base)
+appbuilder = AppBuilder(app, db.session)
 migrate = Migrate(app, db)
 
 
