@@ -1,48 +1,25 @@
 from marshmallow_sqlalchemy import ModelSchema
-from .model import *
+from .models import *
 from flask import jsonify
 
-class DocumentSchema(ModelSchema):
+
+class DocumentsSchema(ModelSchema):
     class Meta:
-        model = Document
+        model = Documents
 
 
-class RequirementSchema(ModelSchema):
+class RequirementsSchema(ModelSchema):
     class Meta:
-        model = Requirement
+        model = Requirements
 
 
-class RunSchema(ModelSchema):
+class RunsSchema(ModelSchema):
     class Meta:
-        model = Run
+        model = Runs
 
 
 class TestSchema(ModelSchema):
     class Meta:
-        model = Test
+        model = Tests
 
 
-@app.route('/api/requirements')
-def hello_world():
-    requirements = Requirement.query.all()
-    schema = RequirementSchema(many=True)
-    data = schema.dump(requirements).data
-    return jsonify({"requirements": data})
-
-
-@app.route('/api/requirements/{id}')
-def hello_world():
-    requirements = Requirement.query.all()
-    schema = RequirementSchema(many=True)
-    data = schema.dump(requirements).data
-    return jsonify({"requirements": data})
-
-
-@app.route('/api/documents')
-def hello_world():
-    return 'Hello World!'
-
-
-@app.route('/api/reports')
-def hello_world():
-    return 'Hello World!'

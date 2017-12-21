@@ -1,17 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey, Boolean, Table
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql.functions import now
 
 from flask_appbuilder import Model
+from flask_appbuilder.security.sqla.models import User
 
 Base = Model
-
-
-class Users(Base):
-    """
-    Users
-    """
-    id = Column(Integer, primary_key=True)
 
 
 class Documents(Base):
@@ -30,30 +24,33 @@ class Documents(Base):
     importance = Column(String(16))
     priority = Column(String(8))
 
-    document_owners = relationship("DocumentOwners", lazy="dynamic")
-    document_tags = relationship("DocumentTags", lazy="dynamic")
+    document_owners = relationship(User, secondary="DocumentOwners", backref='Documents')
+    # document_tags = relationship("DocumentTags", lazy="dynamic")
     # related_documents = relationship("RelatedDocuments", lazy="dynamic")
 
+    def __repr__(self):
+        return self.handle
 
-class DocumentOwners(Base):
-    """
-    DocumentOwners are users which are responsible for the a particular
-    requirements document.
-    """
-    __tablename__ = 'DocumentOwners'
-    id = Column(Integer, primary_key=True)
-    document_id = Column(Integer, ForeignKey("Documents.id"))
-    owner_id = Column(Integer, ForeignKey("Users.id"))
+
+document_owners = Table(
+    'DocumentOwners', Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("document_id", Integer, ForeignKey("Documents.id")),
+    Column("owner_id", Integer, ForeignKey(User.id))
+)
 
 
 class DocumentTags(Base):
     """
     Tags to facilitate the identification or grouping of requirements.
     """
-    __tablename__ = 'DocumentOwners'
+    __tablename__ = 'DocumentTags'
     id = Column(Integer, primary_key=True)
-    document_id = Column(Integer, ForeignKey("Documents.id"))
-    owner_id = Column(Integer, ForeignKey("Users.id"))
+    document_id = Column(Integer, ForeignKey("Documents.id"),)
+    tag = Column(String(256))
+
+    def __repr__(self):
+        return self.tag
 
 
 # class RelatedDocuments(Base):
@@ -70,7 +67,8 @@ class Requirements(Base):
     """
     __tablename__ = 'Requirements'
     id = Column(Integer, primary_key=True)
-    document_id = Column(Integer, ForeignKey("Documents.id"))
+    document_id = Column(Integer, ForeignKey("Documents.id"), nullable=False)
+    document = relationship("Documents")
     req_id = Column(String(256))
     requirement_type = Column(String(256))
     status = Column(String(256))
@@ -79,9 +77,12 @@ class Requirements(Base):
     modified = Column(DateTime, default=now())
     importance = Column(String(16))
     priority = Column(String(8))
-    specs = relationship("Specs", lazy="dynamic")
-    requirement_tags = relationship("RequirementTags", lazy="dynamic")
+    # specs = relationship("Specs", lazy="dynamic")
+    # requirement_tags = relationship("RequirementTags", lazy="dynamic")
     # related_requirements = relationship("RelatedRequirements", lazy="dynamic")
+
+    def __repr__(self):
+        return self.req_id
 
 
 class RequirementTags(Base):
@@ -101,16 +102,17 @@ class RequirementTags(Base):
 #     related_id = Column(Integer, ForeignKey("Requirements.id"))
 
 
-class Run(Base):
+class Runs(Base):
     """
     A Run is effectively the execution of a document and the specs
     associated with it.
     """
-    __tablename__ = 'Run'
+    __tablename__ = 'Runs'
     id = Column(Integer, primary_key=True)
     document_id = Column(Integer, ForeignKey("Documents.id"))
     tag = Column(String(256))
     created = Column(DateTime, default=now())
+    document_owners = relationship(User, secondary="Testers", backref='Runs')
 
 
 class RunConfigurations(Base):
@@ -134,19 +136,16 @@ class RunConfigurationResources(Base):
     """
     __tablename__ = 'RunConfigurationResources'
     id = Column(Integer, primary_key=True)
-    run_configuration_id = Column(Integer, ForeignKey("RunConfugirations.id"))
+    run_configuration_id = Column(Integer, ForeignKey("RunConfigurations.id"))
     uri = Column(String(1024))
 
 
-class Testers(Base):
-    """
-    Testers are users which are responsible for the execution
-    of run.
-    """
-    __tablename__ = 'Testers'
-    id = Column(Integer, primary_key=True)
-    document_id = Column(Integer, ForeignKey("Documents.id"))
-    tester_id = Column(Integer, ForeignKey("Users.id"))
+testers = Table(
+    'Testers', Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("run_id", Integer, ForeignKey("Runs.id")),
+    Column("tester_id", Integer, ForeignKey(User.id))
+)
 
 
 class Specs(Base):
@@ -156,7 +155,7 @@ class Specs(Base):
     """
     __tablename__ = 'Specs'
     id = Column(Integer, primary_key=True)
-    requirement_id = Column(Integer)
+    requirement_id = Column(Integer, ForeignKey("Requirements.id"))
     created = Column(DateTime, default=now())
     modified = Column(DateTime, default=now())
     inputs = Column(Text)
@@ -181,6 +180,16 @@ class SpecIssues(Base):
     #: Jira, something else?
     issue_type = Column(String(256))
     handle = Column(String(256))
+
+
+class SpecComponents(Base):
+    """
+    SpecComponents are the components tests by this spec.
+    """
+    __tablename__ = 'SpecComponents'
+    id = Column(Integer, primary_key=True)
+    spec_id = Column(Integer, ForeignKey("Specs.id"))
+    component = Column(String(256))
 
 
 class SpecQAResources(Base):
@@ -234,5 +243,5 @@ class TestConfigurations(Base):
 class TestConfigurationResources(Base):
     __tablename__ = 'TestConfigurationResources'
     id = Column(Integer, primary_key=True)
-    test_configuration_id = Column(Integer, ForeignKey("TestConfugirations.id"))
+    test_configuration_id = Column(Integer, ForeignKey("TestConfigurations.id"))
     uri = Column(String(1024))
